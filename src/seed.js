@@ -2,28 +2,34 @@
 import db from './db.js';
 
 const ingredientes = [
-  // nome, unidade, preco_compra, quantidade_compra, fornecedor
-  ['Farinha de trigo', 'g', 5.49, 1000, 'Atacadão'],
-  ['Açúcar refinado', 'g', 4.29, 1000, 'Atacadão'],
-  ['Ovos', 'un', 12.0, 12, 'Granja Local'],
-  ['Manteiga sem sal', 'g', 9.9, 200, 'Mercado'],
-  ['Leite integral', 'ml', 4.5, 1000, 'Mercado'],
-  ['Chocolate em pó 50%', 'g', 18.9, 400, 'Distribuidora'],
-  ['Fermento químico', 'g', 6.5, 100, 'Mercado'],
-  ['Leite condensado', 'g', 6.99, 395, 'Mercado'],
-  ['Creme de leite', 'g', 3.5, 200, 'Mercado'],
-  ['Chocolate granulado', 'g', 14.9, 500, 'Distribuidora'],
+  // nome, unidade, preco_compra, quantidade_compra, fornecedor, estoque, estoque_minimo
+  ['Farinha de trigo', 'g', 5.49, 1000, 'Atacadão', 5000, 1000],
+  ['Açúcar refinado', 'g', 4.29, 1000, 'Atacadão', 4000, 1000],
+  ['Ovos', 'un', 12.0, 12, 'Granja Local', 24, 12],
+  ['Manteiga sem sal', 'g', 9.9, 200, 'Mercado', 400, 200],
+  ['Leite integral', 'ml', 4.5, 1000, 'Mercado', 2000, 1000],
+  ['Chocolate em pó 50%', 'g', 18.9, 400, 'Distribuidora', 300, 400],
+  ['Fermento químico', 'g', 6.5, 100, 'Mercado', 80, 50],
+  ['Leite condensado', 'g', 6.99, 395, 'Mercado', 790, 395],
+  ['Creme de leite', 'g', 3.5, 200, 'Mercado', 400, 200],
+  ['Chocolate granulado', 'g', 14.9, 500, 'Distribuidora', 250, 500],
 ];
 
 const insertIng = db.prepare(
-  `INSERT INTO ingredientes (nome, unidade, preco_compra, quantidade_compra, fornecedor)
-   VALUES (?, ?, ?, ?, ?)`
+  `INSERT INTO ingredientes (nome, unidade, preco_compra, quantidade_compra, fornecedor, estoque, estoque_minimo)
+   VALUES (?, ?, ?, ?, ?, ?, ?)`
 );
 
 const seed = db.transaction(() => {
   // Limpa tudo (cuidado: apaga dados existentes)
-  db.exec('DELETE FROM receita_ingredientes; DELETE FROM receitas; DELETE FROM ingredientes;');
-  db.exec("DELETE FROM sqlite_sequence WHERE name IN ('receita_ingredientes','receitas','ingredientes');");
+  db.exec(
+    'DELETE FROM pedido_itens; DELETE FROM pedidos; DELETE FROM clientes;' +
+      'DELETE FROM receita_ingredientes; DELETE FROM receitas; DELETE FROM ingredientes;'
+  );
+  db.exec(
+    "DELETE FROM sqlite_sequence WHERE name IN " +
+      "('pedido_itens','pedidos','clientes','receita_ingredientes','receitas','ingredientes');"
+  );
 
   const ids = {};
   for (const ing of ingredientes) {
@@ -89,8 +95,27 @@ const seed = db.transaction(() => {
   insertRI.run(brigadeiro, ids['Chocolate em pó 50%'], 60);
   insertRI.run(brigadeiro, ids['Creme de leite'], 100);
   insertRI.run(brigadeiro, ids['Chocolate granulado'], 100);
+
+  // Cliente e pedido de exemplo
+  const cliente = db
+    .prepare('INSERT INTO clientes (nome, telefone, email) VALUES (?, ?, ?)')
+    .run('Maria Silva', '(11) 98888-7777', 'maria@email.com').lastInsertRowid;
+
+  const pedido = db
+    .prepare(
+      `INSERT INTO pedidos (cliente_id, data_entrega, status, observacoes)
+       VALUES (?, date('now','+3 days'), 'pendente', 'Entregar gelado')`
+    )
+    .run(cliente).lastInsertRowid;
+
+  db.prepare(
+    'INSERT INTO pedido_itens (pedido_id, receita_id, descricao, quantidade, preco_unitario) VALUES (?, ?, ?, ?, ?)'
+  ).run(pedido, bolo, 'Bolo de Chocolate', 1, 111.4);
+  db.prepare(
+    'INSERT INTO pedido_itens (pedido_id, receita_id, descricao, quantidade, preco_unitario) VALUES (?, ?, ?, ?, ?)'
+  ).run(pedido, brigadeiro, 'Brigadeiro Gourmet', 2, 103.28);
 });
 
 seed();
-console.log('✅ Banco populado com dados de exemplo (2 receitas, 10 ingredientes).');
+console.log('✅ Banco populado: 10 ingredientes, 2 receitas, 1 cliente, 1 pedido.');
 process.exit(0);

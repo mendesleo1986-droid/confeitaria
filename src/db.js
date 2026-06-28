@@ -16,4 +16,17 @@ db.pragma('foreign_keys = ON');
 const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
 
+// Migrações simples para bancos criados em versões anteriores.
+// Adiciona colunas que não existiam no esquema original.
+function adicionarColunaSeFaltar(tabela, coluna, definicao) {
+  const existe = db
+    .prepare(`SELECT COUNT(*) AS n FROM pragma_table_info(?) WHERE name = ?`)
+    .get(tabela, coluna).n;
+  if (!existe) {
+    db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${definicao}`);
+  }
+}
+
+adicionarColunaSeFaltar('ingredientes', 'estoque_minimo', 'REAL NOT NULL DEFAULT 0');
+
 export default db;

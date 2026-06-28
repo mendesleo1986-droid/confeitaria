@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import db from '../db.js';
 import { calcularPrecificacao } from '../precificacao.js';
+import { baixarEstoqueReceita, necessidadeReceita } from '../estoque.js';
+import { fichaReceitaPDF } from '../pdf.js';
 
 const router = Router();
 
@@ -68,6 +70,13 @@ router.get('/:id', (req, res) => {
   res.json(receita);
 });
 
+// Exporta a ficha técnica + precificação em PDF
+router.get('/:id/pdf', (req, res) => {
+  const receita = receitaCompleta(req.params.id);
+  if (!receita) return res.status(404).json({ erro: 'Receita não encontrada' });
+  fichaReceitaPDF(receita, res);
+});
+
 // Cria receita (com seus ingredientes)
 router.post('/', (req, res) => {
   const erro = validar(req.body);
@@ -123,6 +132,31 @@ router.put('/:id', (req, res) => {
     res.json(receitaCompleta(req.params.id));
   } catch (e) {
     res.status(400).json({ erro: e.message });
+  }
+});
+
+// Pré-visualiza a necessidade de ingredientes para produzir N lotes
+router.get('/:id/necessidade', (req, res) => {
+  const existe = db.prepare('SELECT id FROM receitas WHERE id = ?').get(req.params.id);
+  if (!existe) return res.status(404).json({ erro: 'Receita não encontrada' });
+  const lotes = Number(req.query.lotes) || 1;
+  res.json({ lotes, itens: necessidadeReceita(req.params.id, lotes) });
+});
+
+// Produz a receita: baixa o estoque dos ingredientes para N lotes
+router.post('/:id/produzir', (req, res) => {
+  const existe = db.prepare('SELECT id FROM receitas WHERE id = ?').get(req.params.id);
+  if (!existe) return res.status(404).json({ erro: 'Receita não encontrada' });
+
+  const lotes = Number(req.body.lotes);
+  if (!(lotes > 0)) return res.status(400).json({ erro: 'Informe um número de lotes maior que zero.' });
+
+  try {
+    const baixar = db.transaction(() => baixarEstoqueReceita(req.params.id, lotes));
+    const necessidades = baixar();
+    res.json({ ok: true, lotes, baixados: necessidades });
+  } catch (e) {
+    res.status(409).json({ erro: e.message, faltando: e.faltando });
   }
 });
 

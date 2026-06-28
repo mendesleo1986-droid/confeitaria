@@ -25,17 +25,33 @@ router.get('/:id', (req, res) => {
 
 // Cria ingrediente
 router.post('/', (req, res) => {
-  const { nome, unidade = 'g', preco_compra, quantidade_compra, fornecedor = null, estoque = 0 } = req.body;
+  const {
+    nome,
+    unidade = 'g',
+    preco_compra,
+    quantidade_compra,
+    fornecedor = null,
+    estoque = 0,
+    estoque_minimo = 0,
+  } = req.body;
 
   const erro = validar({ nome, unidade, preco_compra, quantidade_compra });
   if (erro) return res.status(400).json({ erro });
 
   const info = db
     .prepare(
-      `INSERT INTO ingredientes (nome, unidade, preco_compra, quantidade_compra, fornecedor, estoque)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO ingredientes (nome, unidade, preco_compra, quantidade_compra, fornecedor, estoque, estoque_minimo)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(nome.trim(), unidade, Number(preco_compra), Number(quantidade_compra), fornecedor, Number(estoque) || 0);
+    .run(
+      nome.trim(),
+      unidade,
+      Number(preco_compra),
+      Number(quantidade_compra),
+      fornecedor,
+      Number(estoque) || 0,
+      Number(estoque_minimo) || 0
+    );
 
   const row = db.prepare('SELECT * FROM ingredientes WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json(comCustoUnitario(row));
@@ -53,7 +69,7 @@ router.put('/:id', (req, res) => {
   db.prepare(
     `UPDATE ingredientes
      SET nome = ?, unidade = ?, preco_compra = ?, quantidade_compra = ?,
-         fornecedor = ?, estoque = ?, atualizado_em = datetime('now','localtime')
+         fornecedor = ?, estoque = ?, estoque_minimo = ?, atualizado_em = datetime('now','localtime')
      WHERE id = ?`
   ).run(
     merged.nome.trim(),
@@ -62,6 +78,7 @@ router.put('/:id', (req, res) => {
     Number(merged.quantidade_compra),
     merged.fornecedor ?? null,
     Number(merged.estoque) || 0,
+    Number(merged.estoque_minimo) || 0,
     req.params.id
   );
 

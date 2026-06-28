@@ -4,7 +4,10 @@ import { dirname, join } from 'node:path';
 import db from './src/db.js';
 import ingredientesRouter from './src/routes/ingredientes.js';
 import receitasRouter from './src/routes/receitas.js';
+import clientesRouter from './src/routes/clientes.js';
+import pedidosRouter from './src/routes/pedidos.js';
 import { calcularPrecificacao } from './src/precificacao.js';
+import { ingredientesEstoqueBaixo } from './src/estoque.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -16,6 +19,8 @@ app.use(express.static(join(__dirname, 'public')));
 // API
 app.use('/api/ingredientes', ingredientesRouter);
 app.use('/api/receitas', receitasRouter);
+app.use('/api/clientes', clientesRouter);
+app.use('/api/pedidos', pedidosRouter);
 
 // Resumo para o painel inicial
 app.get('/api/resumo', (req, res) => {
@@ -39,12 +44,21 @@ app.get('/api/resumo', (req, res) => {
     receitaPotencial += p.preco_venda_sugerido;
   }
 
+  const totalClientes = db.prepare('SELECT COUNT(*) AS n FROM clientes').get().n;
+  const pedidosAbertos = db
+    .prepare("SELECT COUNT(*) AS n FROM pedidos WHERE status IN ('pendente','em_producao')")
+    .get().n;
+  const estoqueBaixo = ingredientesEstoqueBaixo();
+
   res.json({
     total_ingredientes: totalIngredientes,
     total_receitas: receitas.length,
+    total_clientes: totalClientes,
+    pedidos_abertos: pedidosAbertos,
     custo_total_receitas: round(custoTotalGeral),
     receita_potencial: round(receitaPotencial),
     lucro_potencial: round(receitaPotencial - custoTotalGeral),
+    estoque_baixo: estoqueBaixo,
   });
 });
 

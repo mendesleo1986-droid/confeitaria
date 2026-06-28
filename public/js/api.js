@@ -28,5 +28,23 @@ const API = {
     criar: (d) => API.req('POST', '/api/receitas', d),
     atualizar: (id, d) => API.req('PUT', `/api/receitas/${id}`, d),
     remover: (id) => API.req('DELETE', `/api/receitas/${id}`),
+    produzir: (id, lotes) => API.req('POST', `/api/receitas/${id}/produzir`, { lotes }),
+    pdfUrl: (id) => `/api/receitas/${id}/pdf`,
+  },
+
+  clientes: {
+    listar: () => API.req('GET', '/api/clientes'),
+    criar: (d) => API.req('POST', '/api/clientes', d),
+    atualizar: (id, d) => API.req('PUT', `/api/clientes/${id}`, d),
+    remover: (id) => API.req('DELETE', `/api/clientes/${id}`),
+  },
+
+  pedidos: {
+    listar: () => API.req('GET', '/api/pedidos'),
+    obter: (id) => API.req('GET', `/api/pedidos/${id}`),
+    criar: (d) => API.req('POST', '/api/pedidos', d),
+    atualizar: (id, d) => API.req('PUT', `/api/pedidos/${id}`, d),
+    remover: (id) => API.req('DELETE', `/api/pedidos/${id}`),
+    baixarEstoque: (id) => API.req('POST', `/api/pedidos/${id}/baixar-estoque`),
   },
 };

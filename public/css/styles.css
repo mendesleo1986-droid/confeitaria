@@ -147,6 +147,31 @@ textarea { resize: vertical; min-height: 70px; }
 
 .vazio { text-align: center; color: var(--cinza); padding: 2rem; }
 
+/* Alerta de estoque baixo */
+.alerta {
+  background: #fff4e6; border: 1px solid #ffd8a8; border-radius: var(--raio);
+  padding: 0.9rem 1.1rem; margin: 1rem 0; color: #8a5a00;
+}
+.alerta ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+.alerta li { font-size: 0.9rem; }
+.estoque-baixo { color: #c92a2a; font-weight: 700; }
+
+/* Quantidade + seletor de unidade lado a lado */
+.qtd-unidade { display: flex; gap: 0.4rem; }
+.qtd-unidade input { flex: 1; min-width: 0; }
+.qtd-unidade select { flex: 0 0 auto; width: auto; }
+.un-base { color: var(--rosa); font-weight: 600; }
+
+/* Linha de item de pedido (4 colunas) */
+.item-linha { grid-template-columns: 2fr 1fr 1fr auto; }
+
+/* Badges de status de pedido */
+.status { display: inline-block; padding: 0.1rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+.status-pendente { background: #fff3bf; color: #8a6d00; }
+.status-em_producao { background: #d0ebff; color: #1864ab; }
+.status-concluido { background: #d3f9d8; color: #2b8a3e; }
+.status-cancelado { background: #ffe3e3; color: #c92a2a; }
+
 @media (max-width: 560px) {
   .form-grid { grid-template-columns: 1fr; }
   .topbar { gap: 0.8rem; }

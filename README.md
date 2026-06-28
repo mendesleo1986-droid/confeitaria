@@ -16,7 +16,16 @@ com base no custo real, mão de obra, embalagem, custos fixos e margem de lucro 
   - Custos fixos (gás, luz, água) como percentual
   - Margem de lucro (markup)
   - **Preço de venda sugerido** e **preço por porção**
-- **Painel** com visão geral: total de ingredientes, receitas, custo, receita potencial e lucro potencial.
+- **Conversão de unidades**: compre em **kg/L** e use em **g/ml** nas receitas — a conversão é automática.
+- **Controle de estoque**:
+  - Estoque atual e **estoque mínimo** por ingrediente, com **alerta de estoque baixo** no painel.
+  - Ação **Produzir** numa receita: informa quantos lotes e dá baixa automática nos ingredientes.
+  - Baixa de estoque também a partir de um pedido.
+- **Clientes**: cadastro de clientes com telefone, e-mail e observações.
+- **Pedidos**: pedidos com vários itens (receitas + quantidades), preço sugerido automático, total,
+  status (pendente, em produção, concluído, cancelado) e baixa de estoque.
+- **Exportar ficha técnica em PDF**: cada receita gera um PDF com ingredientes, precificação e modo de preparo.
+- **Painel** com visão geral: total de ingredientes, receitas, clientes, pedidos em aberto, custo, receita e lucro potencial.
 
 ## Como a precificação é calculada
 
@@ -33,6 +42,7 @@ preço_por_porção   = preço_de_venda / rendimento
 
 - **Backend**: Node.js + Express
 - **Banco de dados**: SQLite (via `better-sqlite3`) — arquivo local, sem servidor externo
+- **PDF**: `pdfkit` (geração no servidor)
 - **Frontend**: HTML, CSS e JavaScript puro (sem build)
 
 ## Como executar
@@ -76,9 +86,22 @@ Base: `/api`
 | DELETE | `/api/ingredientes/:id`  | Remove ingrediente (se não estiver em uso) |
 | GET    | `/api/receitas`          | Lista receitas (com preços calculados)     |
 | GET    | `/api/receitas/:id`      | Detalhe da receita + precificação completa |
+| GET    | `/api/receitas/:id/pdf`  | Ficha técnica + precificação em PDF        |
+| GET    | `/api/receitas/:id/necessidade?lotes=N` | Ingredientes necessários para N lotes |
+| POST   | `/api/receitas/:id/produzir` | Produz N lotes e baixa o estoque       |
 | POST   | `/api/receitas`          | Cria receita com ingredientes              |
 | PUT    | `/api/receitas/:id`      | Atualiza receita                           |
 | DELETE | `/api/receitas/:id`      | Remove receita                             |
+| GET    | `/api/clientes`          | Lista clientes                             |
+| POST   | `/api/clientes`          | Cria cliente                               |
+| PUT    | `/api/clientes/:id`      | Atualiza cliente                           |
+| DELETE | `/api/clientes/:id`      | Remove cliente                             |
+| GET    | `/api/pedidos`           | Lista pedidos (com total)                  |
+| GET    | `/api/pedidos/:id`       | Detalhe do pedido + itens                  |
+| POST   | `/api/pedidos`           | Cria pedido com itens                      |
+| PUT    | `/api/pedidos/:id`       | Atualiza pedido                            |
+| DELETE | `/api/pedidos/:id`       | Remove pedido                              |
+| POST   | `/api/pedidos/:id/baixar-estoque` | Baixa o estoque dos itens do pedido |
 
 ### Exemplo: criar uma receita
 
@@ -105,19 +128,23 @@ curl -X POST http://localhost:3000/api/receitas \
 
 ```
 confeitaria/
-├── server.js              # Servidor Express e rota de resumo
+├── server.js              # Servidor Express, rota de resumo e registro dos routers
 ├── src/
-│   ├── db.js              # Conexão SQLite e aplicação do schema
+│   ├── db.js              # Conexão SQLite, schema e migrações
 │   ├── schema.sql         # Definição das tabelas
 │   ├── precificacao.js    # Lógica de cálculo de custos e preços
+│   ├── estoque.js         # Baixa de estoque e alertas de estoque baixo
+│   ├── pdf.js             # Geração da ficha técnica em PDF
 │   ├── seed.js            # Dados de exemplo
 │   └── routes/
 │       ├── ingredientes.js
-│       └── receitas.js
+│       ├── receitas.js
+│       ├── clientes.js
+│       └── pedidos.js
 └── public/                # Frontend
     ├── index.html
     ├── css/styles.css
-    └── js/{api.js,app.js}
+    └── js/{unidades.js,api.js,app.js}
 ```
 
 ## Observações sobre unidades

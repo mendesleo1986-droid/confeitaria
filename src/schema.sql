@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS ingredientes (
   quantidade_compra REAL    NOT NULL,               -- quantidade (na unidade base) que vem na embalagem
   fornecedor        TEXT,
   estoque           REAL    NOT NULL DEFAULT 0,      -- quantidade em estoque (unidade base)
+  estoque_minimo    REAL    NOT NULL DEFAULT 0,      -- nível mínimo para alerta de estoque baixo
   criado_em         TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
   atualizado_em     TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
 );
@@ -46,3 +47,38 @@ CREATE INDEX IF NOT EXISTS idx_receita_ingredientes_receita
   ON receita_ingredientes(receita_id);
 CREATE INDEX IF NOT EXISTS idx_receita_ingredientes_ingrediente
   ON receita_ingredientes(ingrediente_id);
+
+-- ====== Clientes e Pedidos ======
+
+CREATE TABLE IF NOT EXISTS clientes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome        TEXT    NOT NULL,
+  telefone    TEXT,
+  email       TEXT,
+  observacoes TEXT,
+  criado_em   TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS pedidos (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  cliente_id       INTEGER,
+  data_entrega     TEXT,
+  status           TEXT    NOT NULL DEFAULT 'pendente', -- pendente | em_producao | concluido | cancelado
+  observacoes      TEXT,
+  estoque_baixado  INTEGER NOT NULL DEFAULT 0,          -- 0/1: se já houve baixa de estoque
+  criado_em        TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+  FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS pedido_itens (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  pedido_id      INTEGER NOT NULL,
+  receita_id     INTEGER,
+  descricao      TEXT    NOT NULL,             -- snapshot do nome da receita
+  quantidade     REAL    NOT NULL,             -- nº de unidades da receita pedidas
+  preco_unitario REAL    NOT NULL,             -- snapshot do preço de venda no momento do pedido
+  FOREIGN KEY (pedido_id)  REFERENCES pedidos(id)  ON DELETE CASCADE,
+  FOREIGN KEY (receita_id) REFERENCES receitas(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_pedido_itens_pedido ON pedido_itens(pedido_id);
