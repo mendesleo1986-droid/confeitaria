@@ -1,0 +1,23 @@
+{
+  "name": "confeitaria",
+  "version": "1.0.0",
+  "description": "Sistema de gestão de confeitaria: controle de receitas e precificação",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node src/seed.js"
+  },
+  "keywords": [
+    "confeitaria",
+    "receitas",
+    "precificacao",
+    "gestao"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.21.0"
+  }
+}
