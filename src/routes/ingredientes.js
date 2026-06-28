@@ -1,109 +1,71 @@
 import { Router } from 'express';
-import db from '../db.js';
+import { query, queryOne, execute } from '../db.js';
 import { custoUnitario } from '../precificacao.js';
 
 const router = Router();
-
 const UNIDADES_VALIDAS = ['g', 'ml', 'un'];
 
-function comCustoUnitario(ing) {
-  return { ...ing, custo_unitario: custoUnitario(ing) };
-}
+const comCustoUnitario = (ing) => ({ ...ing, custo_unitario: custoUnitario(ing) });
 
-// Lista todos os ingredientes
-router.get('/', (req, res) => {
-  const rows = db.prepare('SELECT * FROM ingredientes ORDER BY nome COLLATE NOCASE').all();
+router.get('/', async (req, res) => {
+  const rows = await query('SELECT * FROM ingredientes ORDER BY LOWER(nome)');
   res.json(rows.map(comCustoUnitario));
 });
 
-// Busca um ingrediente
-router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM ingredientes WHERE id = ?').get(req.params.id);
+router.get('/:id', async (req, res) => {
+  const row = await queryOne('SELECT * FROM ingredientes WHERE id = $1', [req.params.id]);
   if (!row) return res.status(404).json({ erro: 'Ingrediente não encontrado' });
   res.json(comCustoUnitario(row));
 });
 
-// Cria ingrediente
-router.post('/', (req, res) => {
-  const {
-    nome,
-    unidade = 'g',
-    preco_compra,
-    quantidade_compra,
-    fornecedor = null,
-    estoque = 0,
-    estoque_minimo = 0,
-  } = req.body;
-
+router.post('/', async (req, res) => {
+  const { nome, unidade = 'g', preco_compra, quantidade_compra, fornecedor = null, estoque = 0, estoque_minimo = 0 } = req.body;
   const erro = validar({ nome, unidade, preco_compra, quantidade_compra });
   if (erro) return res.status(400).json({ erro });
 
-  const info = db
-    .prepare(
-      `INSERT INTO ingredientes (nome, unidade, preco_compra, quantidade_compra, fornecedor, estoque, estoque_minimo)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(
-      nome.trim(),
-      unidade,
-      Number(preco_compra),
-      Number(quantidade_compra),
-      fornecedor,
-      Number(estoque) || 0,
-      Number(estoque_minimo) || 0
-    );
-
-  const row = db.prepare('SELECT * FROM ingredientes WHERE id = ?').get(info.lastInsertRowid);
+  const row = await queryOne(
+    `INSERT INTO ingredientes (nome, unidade, preco_compra, quantidade_compra, fornecedor, estoque, estoque_minimo)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [nome.trim(), unidade, Number(preco_compra), Number(quantidade_compra), fornecedor,
+     Number(estoque) || 0, Number(estoque_minimo) || 0]
+  );
   res.status(201).json(comCustoUnitario(row));
 });
 
-// Atualiza ingrediente
-router.put('/:id', (req, res) => {
-  const atual = db.prepare('SELECT * FROM ingredientes WHERE id = ?').get(req.params.id);
+router.put('/:id', async (req, res) => {
+  const atual = await queryOne('SELECT * FROM ingredientes WHERE id = $1', [req.params.id]);
   if (!atual) return res.status(404).json({ erro: 'Ingrediente não encontrado' });
 
   const merged = { ...atual, ...req.body };
   const erro = validar(merged);
   if (erro) return res.status(400).json({ erro });
 
-  db.prepare(
+  const row = await queryOne(
     `UPDATE ingredientes
-     SET nome = ?, unidade = ?, preco_compra = ?, quantidade_compra = ?,
-         fornecedor = ?, estoque = ?, estoque_minimo = ?, atualizado_em = datetime('now','localtime')
-     WHERE id = ?`
-  ).run(
-    merged.nome.trim(),
-    merged.unidade,
-    Number(merged.preco_compra),
-    Number(merged.quantidade_compra),
-    merged.fornecedor ?? null,
-    Number(merged.estoque) || 0,
-    Number(merged.estoque_minimo) || 0,
-    req.params.id
+     SET nome=$1, unidade=$2, preco_compra=$3, quantidade_compra=$4,
+         fornecedor=$5, estoque=$6, estoque_minimo=$7, atualizado_em=NOW()
+     WHERE id=$8 RETURNING *`,
+    [merged.nome.trim(), merged.unidade, Number(merged.preco_compra), Number(merged.quantidade_compra),
+     merged.fornecedor ?? null, Number(merged.estoque) || 0, Number(merged.estoque_minimo) || 0, req.params.id]
   );
-
-  const row = db.prepare('SELECT * FROM ingredientes WHERE id = ?').get(req.params.id);
   res.json(comCustoUnitario(row));
 });
 
-// Remove ingrediente (bloqueado se estiver em uso por alguma receita)
-router.delete('/:id', (req, res) => {
-  const emUso = db
-    .prepare('SELECT COUNT(*) AS n FROM receita_ingredientes WHERE ingrediente_id = ?')
-    .get(req.params.id);
-  if (emUso.n > 0) {
-    return res.status(409).json({ erro: `Ingrediente em uso por ${emUso.n} receita(s). Remova-o das receitas primeiro.` });
-  }
-  const info = db.prepare('DELETE FROM ingredientes WHERE id = ?').run(req.params.id);
-  if (info.changes === 0) return res.status(404).json({ erro: 'Ingrediente não encontrado' });
+router.delete('/:id', async (req, res) => {
+  const [{ n }] = await query(
+    'SELECT COUNT(*) AS n FROM receita_ingredientes WHERE ingrediente_id = $1', [req.params.id]
+  );
+  if (Number(n) > 0)
+    return res.status(409).json({ erro: `Ingrediente em uso por ${n} receita(s). Remova-o das receitas primeiro.` });
+  const rowCount = await execute('DELETE FROM ingredientes WHERE id = $1', [req.params.id]);
+  if (rowCount === 0) return res.status(404).json({ erro: 'Ingrediente não encontrado' });
   res.status(204).end();
 });
 
 function validar({ nome, unidade, preco_compra, quantidade_compra }) {
-  if (!nome || !nome.trim()) return 'O nome é obrigatório.';
+  if (!nome?.trim()) return 'O nome é obrigatório.';
   if (!UNIDADES_VALIDAS.includes(unidade)) return `Unidade inválida. Use: ${UNIDADES_VALIDAS.join(', ')}.`;
-  if (preco_compra == null || isNaN(Number(preco_compra)) || Number(preco_compra) < 0)
-    return 'Preço de compra inválido.';
+  if (preco_compra == null || isNaN(Number(preco_compra)) || Number(preco_compra) < 0) return 'Preço de compra inválido.';
   if (quantidade_compra == null || isNaN(Number(quantidade_compra)) || Number(quantidade_compra) <= 0)
     return 'Quantidade da compra deve ser maior que zero.';
   return null;

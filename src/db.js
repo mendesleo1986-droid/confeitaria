@@ -1,32 +1,34 @@
-import Database from 'better-sqlite3';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import pg from 'pg';
+const { Pool } = pg;
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  max: 5,
+});
 
-// Permite definir o caminho do banco via variável de ambiente (útil em testes/produção)
-const DB_PATH = process.env.DB_PATH || join(__dirname, '..', 'confeitaria.db');
+pool.on('connect', (client) => {
+  client.query('SET search_path TO confeitaria,public');
+});
 
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+export const query    = (sql, p = []) => pool.query(sql, p).then((r) => r.rows);
+export const queryOne = (sql, p = []) => pool.query(sql, p).then((r) => r.rows[0] ?? null);
+export const execute  = (sql, p = []) => pool.query(sql, p).then((r) => r.rowCount);
 
-// Aplica o esquema (idempotente — usa CREATE TABLE IF NOT EXISTS)
-const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf8');
-db.exec(schema);
-
-// Migrações simples para bancos criados em versões anteriores.
-// Adiciona colunas que não existiam no esquema original.
-function adicionarColunaSeFaltar(tabela, coluna, definicao) {
-  const existe = db
-    .prepare(`SELECT COUNT(*) AS n FROM pragma_table_info(?) WHERE name = ?`)
-    .get(tabela, coluna).n;
-  if (!existe) {
-    db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${definicao}`);
+export async function transaction(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET search_path TO confeitaria,public');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
   }
 }
 
-adicionarColunaSeFaltar('ingredientes', 'estoque_minimo', 'REAL NOT NULL DEFAULT 0');
-
-export default db;
+export default pool;

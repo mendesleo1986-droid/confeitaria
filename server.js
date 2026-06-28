@@ -1,7 +1,7 @@
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import db from './src/db.js';
+import { query } from './src/db.js';
 import { runSeed } from './src/seed.js';
 import ingredientesRouter from './src/routes/ingredientes.js';
 import receitasRouter from './src/routes/receitas.js';
@@ -17,72 +17,78 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
-// Semeia dados de exemplo na primeira execução (banco vazio)
-if (db.prepare('SELECT COUNT(*) AS n FROM ingredientes').get().n === 0) {
-  runSeed();
-}
-
-// API
 app.use('/api/ingredientes', ingredientesRouter);
-app.use('/api/receitas', receitasRouter);
-app.use('/api/clientes', clientesRouter);
-app.use('/api/pedidos', pedidosRouter);
+app.use('/api/receitas',     receitasRouter);
+app.use('/api/clientes',     clientesRouter);
+app.use('/api/pedidos',      pedidosRouter);
 
-// Resumo para o painel inicial
-app.get('/api/resumo', (req, res) => {
-  const totalIngredientes = db.prepare('SELECT COUNT(*) AS n FROM ingredientes').get().n;
-  const receitas = db.prepare('SELECT * FROM receitas').all();
+app.get('/api/resumo', async (req, res) => {
+  try {
+    const [{ n: totalIngredientes }] = await query('SELECT COUNT(*) AS n FROM ingredientes');
+    const receitas = await query('SELECT * FROM receitas');
 
-  let custoTotalGeral = 0;
-  let receitaPotencial = 0;
-  const itensStmt = db.prepare(
-    `SELECT ri.quantidade, i.* FROM receita_ingredientes ri
-     JOIN ingredientes i ON i.id = ri.ingrediente_id WHERE ri.receita_id = ?`
-  );
+    let custoTotalGeral = 0;
+    let receitaPotencial = 0;
 
-  for (const r of receitas) {
-    const itens = itensStmt.all(r.id).map((row) => {
-      const { quantidade, ...ingrediente } = row;
-      return { quantidade, ingrediente };
+    for (const r of receitas) {
+      const itens = (await query(
+        `SELECT ri.quantidade, i.* FROM receita_ingredientes ri
+         JOIN ingredientes i ON i.id = ri.ingrediente_id WHERE ri.receita_id = $1`,
+        [r.id]
+      )).map(({ quantidade, ...ingrediente }) => ({ quantidade, ingrediente }));
+      const p = calcularPrecificacao(r, itens);
+      custoTotalGeral  += p.custo_total;
+      receitaPotencial += p.preco_venda_sugerido;
+    }
+
+    const [{ n: totalClientes }]  = await query('SELECT COUNT(*) AS n FROM clientes');
+    const [{ n: pedidosAbertos }] = await query(
+      "SELECT COUNT(*) AS n FROM pedidos WHERE status IN ('pendente','em_producao')"
+    );
+    const estoqueBaixo = await ingredientesEstoqueBaixo();
+
+    res.json({
+      total_ingredientes:   Number(totalIngredientes),
+      total_receitas:       receitas.length,
+      total_clientes:       Number(totalClientes),
+      pedidos_abertos:      Number(pedidosAbertos),
+      custo_total_receitas: round(custoTotalGeral),
+      receita_potencial:    round(receitaPotencial),
+      lucro_potencial:      round(receitaPotencial - custoTotalGeral),
+      estoque_baixo:        estoqueBaixo,
     });
-    const p = calcularPrecificacao(r, itens);
-    custoTotalGeral += p.custo_total;
-    receitaPotencial += p.preco_venda_sugerido;
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
-
-  const totalClientes = db.prepare('SELECT COUNT(*) AS n FROM clientes').get().n;
-  const pedidosAbertos = db
-    .prepare("SELECT COUNT(*) AS n FROM pedidos WHERE status IN ('pendente','em_producao')")
-    .get().n;
-  const estoqueBaixo = ingredientesEstoqueBaixo();
-
-  res.json({
-    total_ingredientes: totalIngredientes,
-    total_receitas: receitas.length,
-    total_clientes: totalClientes,
-    pedidos_abertos: pedidosAbertos,
-    custo_total_receitas: round(custoTotalGeral),
-    receita_potencial: round(receitaPotencial),
-    lucro_potencial: round(receitaPotencial - custoTotalGeral),
-    estoque_baixo: estoqueBaixo,
-  });
 });
 
-// Tratamento de erros JSON inválido
-app.use((err, req, res, next) => {
-  if (err.type === 'entity.parse.failed') {
-    return res.status(400).json({ erro: 'JSON inválido no corpo da requisição.' });
+// Semeia dados de exemplo na primeira execução (banco vazio)
+async function inicializar() {
+  try {
+    const [{ n }] = await query('SELECT COUNT(*) AS n FROM ingredientes');
+    if (Number(n) === 0) await runSeed();
+  } catch (e) {
+    console.error('Erro ao inicializar banco:', e.message);
   }
+}
+
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed')
+    return res.status(400).json({ erro: 'JSON inválido no corpo da requisição.' });
   console.error(err);
   res.status(500).json({ erro: 'Erro interno do servidor.' });
 });
 
-function round(v) {
-  return Math.round((v + Number.EPSILON) * 100) / 100;
-}
+function round(v) { return Math.round((v + Number.EPSILON) * 100) / 100; }
 
-app.listen(PORT, () => {
-  console.log(`🍰 Confeitaria rodando em http://localhost:${PORT}`);
-});
+// Em Vercel o módulo é importado como handler — não sobe listen()
+if (!process.env.VERCEL) {
+  inicializar().then(() => {
+    app.listen(PORT, () => console.log(`🍰 Confeitaria rodando em http://localhost:${PORT}`));
+  });
+} else {
+  inicializar();
+}
 
 export default app;

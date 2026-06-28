@@ -1,51 +1,47 @@
 import { Router } from 'express';
-import db from '../db.js';
+import { query, queryOne, execute } from '../db.js';
 
 const router = Router();
 
-router.get('/', (req, res) => {
-  const rows = db
-    .prepare(
-      `SELECT c.*, (SELECT COUNT(*) FROM pedidos p WHERE p.cliente_id = c.id) AS total_pedidos
-       FROM clientes c ORDER BY c.nome COLLATE NOCASE`
-    )
-    .all();
+router.get('/', async (req, res) => {
+  const rows = await query(
+    `SELECT c.*, (SELECT COUNT(*) FROM pedidos p WHERE p.cliente_id = c.id) AS total_pedidos
+     FROM clientes c ORDER BY LOWER(c.nome)`
+  );
   res.json(rows);
 });
 
-router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM clientes WHERE id = ?').get(req.params.id);
+router.get('/:id', async (req, res) => {
+  const row = await queryOne('SELECT * FROM clientes WHERE id = $1', [req.params.id]);
   if (!row) return res.status(404).json({ erro: 'Cliente não encontrado' });
   res.json(row);
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { nome, telefone = null, email = null, observacoes = null } = req.body;
-  if (!nome || !nome.trim()) return res.status(400).json({ erro: 'O nome é obrigatório.' });
-  const info = db
-    .prepare('INSERT INTO clientes (nome, telefone, email, observacoes) VALUES (?, ?, ?, ?)')
-    .run(nome.trim(), telefone, email, observacoes);
-  res.status(201).json(db.prepare('SELECT * FROM clientes WHERE id = ?').get(info.lastInsertRowid));
+  if (!nome?.trim()) return res.status(400).json({ erro: 'O nome é obrigatório.' });
+  const row = await queryOne(
+    'INSERT INTO clientes (nome, telefone, email, observacoes) VALUES ($1,$2,$3,$4) RETURNING *',
+    [nome.trim(), telefone, email, observacoes]
+  );
+  res.status(201).json(row);
 });
 
-router.put('/:id', (req, res) => {
-  const atual = db.prepare('SELECT * FROM clientes WHERE id = ?').get(req.params.id);
+router.put('/:id', async (req, res) => {
+  const atual = await queryOne('SELECT * FROM clientes WHERE id = $1', [req.params.id]);
   if (!atual) return res.status(404).json({ erro: 'Cliente não encontrado' });
   const m = { ...atual, ...req.body };
-  if (!m.nome || !m.nome.trim()) return res.status(400).json({ erro: 'O nome é obrigatório.' });
-  db.prepare('UPDATE clientes SET nome = ?, telefone = ?, email = ?, observacoes = ? WHERE id = ?').run(
-    m.nome.trim(),
-    m.telefone ?? null,
-    m.email ?? null,
-    m.observacoes ?? null,
-    req.params.id
+  if (!m.nome?.trim()) return res.status(400).json({ erro: 'O nome é obrigatório.' });
+  const row = await queryOne(
+    'UPDATE clientes SET nome=$1, telefone=$2, email=$3, observacoes=$4 WHERE id=$5 RETURNING *',
+    [m.nome.trim(), m.telefone ?? null, m.email ?? null, m.observacoes ?? null, req.params.id]
   );
-  res.json(db.prepare('SELECT * FROM clientes WHERE id = ?').get(req.params.id));
+  res.json(row);
 });
 
-router.delete('/:id', (req, res) => {
-  const info = db.prepare('DELETE FROM clientes WHERE id = ?').run(req.params.id);
-  if (info.changes === 0) return res.status(404).json({ erro: 'Cliente não encontrado' });
+router.delete('/:id', async (req, res) => {
+  const rowCount = await execute('DELETE FROM clientes WHERE id = $1', [req.params.id]);
+  if (rowCount === 0) return res.status(404).json({ erro: 'Cliente não encontrado' });
   res.status(204).end();
 });
 

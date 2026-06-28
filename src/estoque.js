@@ -1,16 +1,18 @@
-import db from './db.js';
+import pool, { query } from './db.js';
 
-// Necessidade de ingredientes para produzir `multiplicador` lotes de uma receita.
-export function necessidadeReceita(receitaId, multiplicador) {
-  const itens = db
-    .prepare(
-      `SELECT ri.quantidade, i.id, i.nome, i.unidade, i.estoque
-       FROM receita_ingredientes ri
-       JOIN ingredientes i ON i.id = ri.ingrediente_id
-       WHERE ri.receita_id = ?`
-    )
-    .all(receitaId);
+function qrows(client, sql, p = []) {
+  return (client ? client.query(sql, p) : pool.query(sql, p)).then((r) => r.rows);
+}
 
+export async function necessidadeReceita(receitaId, multiplicador, client = null) {
+  const itens = await qrows(
+    client,
+    `SELECT ri.quantidade, i.id, i.nome, i.unidade, i.estoque
+     FROM receita_ingredientes ri
+     JOIN ingredientes i ON i.id = ri.ingrediente_id
+     WHERE ri.receita_id = $1`,
+    [receitaId]
+  );
   return itens.map((i) => ({
     ingrediente_id: i.id,
     nome: i.nome,
@@ -20,11 +22,8 @@ export function necessidadeReceita(receitaId, multiplicador) {
   }));
 }
 
-// Baixa o estoque para produzir `multiplicador` lotes da receita.
-// Lança Error (com .faltando) se algum ingrediente não tiver estoque suficiente.
-// Deve ser chamada dentro de uma transação.
-export function baixarEstoqueReceita(receitaId, multiplicador) {
-  const necessidades = necessidadeReceita(receitaId, multiplicador);
+export async function baixarEstoqueReceita(receitaId, multiplicador, client = null) {
+  const necessidades = await necessidadeReceita(receitaId, multiplicador, client);
   const faltando = necessidades.filter((n) => n.estoque < n.necessario - 1e-9);
 
   if (faltando.length) {
@@ -36,23 +35,22 @@ export function baixarEstoqueReceita(receitaId, multiplicador) {
     throw err;
   }
 
-  const upd = db.prepare(
-    `UPDATE ingredientes SET estoque = estoque - ?, atualizado_em = datetime('now','localtime') WHERE id = ?`
-  );
-  for (const n of necessidades) upd.run(n.necessario, n.ingrediente_id);
+  for (const n of necessidades) {
+    await qrows(client,
+      `UPDATE ingredientes SET estoque = estoque - $1, atualizado_em = NOW() WHERE id = $2`,
+      [n.necessario, n.ingrediente_id]
+    );
+  }
   return necessidades;
 }
 
-// Lista ingredientes com estoque igual ou abaixo do mínimo definido (>0).
-export function ingredientesEstoqueBaixo() {
-  return db
-    .prepare(
-      `SELECT id, nome, unidade, estoque, estoque_minimo
-       FROM ingredientes
-       WHERE estoque_minimo > 0 AND estoque <= estoque_minimo
-       ORDER BY nome COLLATE NOCASE`
-    )
-    .all();
+export async function ingredientesEstoqueBaixo() {
+  return query(
+    `SELECT id, nome, unidade, estoque, estoque_minimo
+     FROM ingredientes
+     WHERE estoque_minimo > 0 AND estoque <= estoque_minimo
+     ORDER BY LOWER(nome)`
+  );
 }
 
 function round(v) {
