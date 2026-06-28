@@ -2,6 +2,7 @@ import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import db from './src/db.js';
+import { runSeed } from './src/seed.js';
 import ingredientesRouter from './src/routes/ingredientes.js';
 import receitasRouter from './src/routes/receitas.js';
 import clientesRouter from './src/routes/clientes.js';
@@ -15,6 +16,11 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
+
+// Semeia dados de exemplo na primeira execução (banco vazio)
+if (db.prepare('SELECT COUNT(*) AS n FROM ingredientes').get().n === 0) {
+  runSeed();
+}
 
 // API
 app.use('/api/ingredientes', ingredientesRouter);

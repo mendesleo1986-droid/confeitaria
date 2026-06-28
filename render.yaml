@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: confeitaria
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /opt/render/project/src/confeitaria.db

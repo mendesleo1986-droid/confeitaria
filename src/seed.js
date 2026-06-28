@@ -1,5 +1,6 @@
 // Popula o banco com dados de exemplo. Execute com: npm run seed
 import db from './db.js';
+import { fileURLToPath } from 'node:url';
 
 const ingredientes = [
   // nome, unidade, preco_compra, quantidade_compra, fornecedor, estoque, estoque_minimo
@@ -116,6 +117,13 @@ const seed = db.transaction(() => {
   ).run(pedido, brigadeiro, 'Brigadeiro Gourmet', 2, 103.28);
 });
 
-seed();
-console.log('✅ Banco populado: 10 ingredientes, 2 receitas, 1 cliente, 1 pedido.');
-process.exit(0);
+export function runSeed() {
+  seed();
+  console.log('✅ Banco populado: 10 ingredientes, 2 receitas, 1 cliente, 1 pedido.');
+}
+
+// Executado diretamente via CLI (npm run seed)
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  runSeed();
+  process.exit(0);
+}
