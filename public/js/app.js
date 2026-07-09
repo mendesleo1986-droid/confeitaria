@@ -39,6 +39,7 @@ const overlay = $('#modal-overlay');
 function abrirModal(html) {
   $('#modal-content').innerHTML = '';
   $('#modal-content').appendChild(typeof html === 'string' ? el(html) : html);
+  Mascaras.aplicar($('#modal-content'));
   overlay.hidden = false;
 }
 function fecharModal() {
@@ -189,7 +190,7 @@ function formIngrediente(ing = null) {
       </div>
       <div class="field">
         <label>Preço de compra (R$) *</label>
-        <input name="preco_compra" type="number" step="0.01" min="0" required value="${ing?.preco_compra ?? ''}" placeholder="Ex.: 5.49" />
+        <input name="preco_compra" data-mask="dinheiro" inputmode="numeric" required value="${Mascaras.dinheiroDeNumero(ing?.preco_compra)}" placeholder="0,00" />
       </div>
       <div class="field">
         <label>Qtd. da embalagem *</label>
@@ -224,7 +225,7 @@ function formIngrediente(ing = null) {
   });
 
   const preview = () => {
-    const p = Number(form.preco_compra.value);
+    const p = Mascaras.paraNumero(form.preco_compra.value);
     const unCompra = $('.sel-un-compra', form)?.value || selBase.value;
     const qBase = Unidades.paraBase(form.quantidade_compra.value, unCompra);
     $('#custo-preview', form).textContent =
@@ -237,6 +238,7 @@ function formIngrediente(ing = null) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const dados = Object.fromEntries(new FormData(form));
+    Mascaras.numerizarDinheiro(form, dados);
     // Converte a quantidade da compra para a unidade base
     const unCompra = $('.sel-un-compra', form)?.value || dados.unidade;
     dados.quantidade_compra = Unidades.paraBase(dados.quantidade_compra, unCompra);
@@ -414,11 +416,11 @@ async function formReceita(receita = null) {
     <div class="form-grid">
       <div class="field">
         <label>Mão de obra (R$)</label>
-        <input name="custo_mao_obra" type="number" step="0.01" min="0" value="${receita?.custo_mao_obra ?? 0}" />
+        <input name="custo_mao_obra" data-mask="dinheiro" inputmode="numeric" value="${Mascaras.dinheiroDeNumero(receita?.custo_mao_obra ?? 0)}" placeholder="0,00" />
       </div>
       <div class="field">
         <label>Embalagem (R$)</label>
-        <input name="custo_embalagem" type="number" step="0.01" min="0" value="${receita?.custo_embalagem ?? 0}" />
+        <input name="custo_embalagem" data-mask="dinheiro" inputmode="numeric" value="${Mascaras.dinheiroDeNumero(receita?.custo_embalagem ?? 0)}" placeholder="0,00" />
       </div>
       <div class="field">
         <label>Custos fixos (% sobre subtotal)</label>
@@ -501,7 +503,7 @@ async function formReceita(receita = null) {
       const ing = ingredientesCache.find((x) => x.id === it.ingrediente_id);
       return s + (ing ? (ing.preco_compra / ing.quantidade_compra) * it.quantidade : 0);
     }, 0);
-    const subtotal = custoIng + (Number(d.custo_mao_obra) || 0) + (Number(d.custo_embalagem) || 0);
+    const subtotal = custoIng + Mascaras.paraNumero(d.custo_mao_obra) + Mascaras.paraNumero(d.custo_embalagem);
     const fixos = subtotal * ((Number(d.percentual_custos_fixos) || 0) / 100);
     const custoTotal = subtotal + fixos;
     const preco = custoTotal * (1 + (Number(d.margem_lucro) || 0) / 100);
@@ -525,6 +527,7 @@ async function formReceita(receita = null) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const dados = Object.fromEntries(new FormData(form));
+    Mascaras.numerizarDinheiro(form, dados);
     dados.ingredientes = coletarIngredientes();
     try {
       if (editando) await API.receitas.atualizar(receita.id, dados);
@@ -550,13 +553,14 @@ async function renderClientes() {
     clientesCache = await API.clientes.listar();
     const tbody = $('#tabela-clientes tbody');
     if (!clientesCache.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="vazio">Nenhum cliente cadastrado.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="vazio">Nenhum cliente cadastrado.</td></tr>`;
       return;
     }
     tbody.innerHTML = clientesCache
       .map(
         (c) => `<tr>
           <td>${esc(c.nome)}</td>
+          <td>${esc(c.documento || '—')}</td>
           <td>${esc(c.telefone || '—')}</td>
           <td>${esc(c.email || '—')}</td>
           <td class="num">${c.total_pedidos}</td>
@@ -584,8 +588,9 @@ function formCliente(cli = null) {
     <h3>${editando ? 'Editar' : 'Novo'} cliente</h3>
     <div class="form-grid">
       <div class="field full"><label>Nome *</label><input name="nome" required value="${esc(cli?.nome || '')}" /></div>
-      <div class="field"><label>Telefone</label><input name="telefone" value="${esc(cli?.telefone || '')}" /></div>
-      <div class="field"><label>E-mail</label><input name="email" type="email" value="${esc(cli?.email || '')}" /></div>
+      <div class="field"><label>CPF / CNPJ</label><input name="documento" data-mask="documento" inputmode="numeric" value="${esc(cli?.documento || '')}" placeholder="000.000.000-00" /></div>
+      <div class="field"><label>Telefone</label><input name="telefone" data-mask="telefone" inputmode="numeric" value="${esc(cli?.telefone || '')}" placeholder="(00) 00000-0000" /></div>
+      <div class="field full"><label>E-mail</label><input name="email" type="email" value="${esc(cli?.email || '')}" placeholder="nome@exemplo.com" /></div>
       <div class="field full"><label>Observações</label><textarea name="observacoes">${esc(cli?.observacoes || '')}</textarea></div>
     </div>
     <div class="form-actions">
@@ -597,6 +602,9 @@ function formCliente(cli = null) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const dados = Object.fromEntries(new FormData(form));
+    if (!Mascaras.validarDocumento(dados.documento)) return toast('CPF/CNPJ inválido.', true);
+    if (!Mascaras.validarTelefone(dados.telefone)) return toast('Telefone inválido.', true);
+    if (!Mascaras.validarEmail(dados.email)) return toast('E-mail inválido.', true);
     try {
       if (editando) await API.clientes.atualizar(cli.id, dados);
       else await API.clientes.criar(dados);
@@ -762,7 +770,7 @@ async function formPedido(pedido = null) {
     const linha = el(`<div class="ing-linha item-linha">
       <div class="field"><label>Receita</label><select class="sel-receita">${optReceitas(item?.receita_id)}</select></div>
       <div class="field"><label>Qtd.</label><input class="qtd-item" type="number" step="0.01" min="0.01" value="${item?.quantidade ?? 1}" /></div>
-      <div class="field"><label>Preço unit.</label><input class="preco-item" type="number" step="0.01" min="0" value="${item?.preco_unitario ?? ''}" placeholder="auto" /></div>
+      <div class="field"><label>Preço unit.</label><input class="preco-item" data-mask="dinheiro" inputmode="numeric" value="${Mascaras.dinheiroDeNumero(item?.preco_unitario)}" placeholder="auto" /></div>
       <button type="button" class="btn small danger" title="Remover">✕</button>
     </div>`);
     const selR = linha.querySelector('.sel-receita');
@@ -771,7 +779,7 @@ async function formPedido(pedido = null) {
     const aplicarPreco = () => {
       const opt = selR.selectedOptions[0];
       if (opt && (!precoInput.value || precoInput.dataset.auto === '1')) {
-        precoInput.value = Number(opt.dataset.preco).toFixed(2);
+        precoInput.value = Mascaras.dinheiroDeNumero(opt.dataset.preco);
         precoInput.dataset.auto = '1';
       }
       atualizarTotal();
@@ -788,16 +796,21 @@ async function formPedido(pedido = null) {
     });
     linha.addEventListener('input', atualizarTotal);
     cont.appendChild(linha);
+    Mascaras.aplicar(linha);
     if (!item) aplicarPreco();
   }
 
   function coletarItens() {
     return $$('.item-linha', form)
-      .map((l) => ({
-        receita_id: Number(l.querySelector('.sel-receita').value),
-        quantidade: Number(l.querySelector('.qtd-item').value),
-        preco_unitario: l.querySelector('.preco-item').value,
-      }))
+      .map((l) => {
+        const precoStr = l.querySelector('.preco-item').value.trim();
+        return {
+          receita_id: Number(l.querySelector('.sel-receita').value),
+          quantidade: Number(l.querySelector('.qtd-item').value),
+          // vazio => backend usa o preço sugerido automaticamente
+          preco_unitario: precoStr === '' ? '' : Mascaras.paraNumero(precoStr),
+        };
+      })
       .filter((i) => i.receita_id && i.quantidade > 0);
   }
 

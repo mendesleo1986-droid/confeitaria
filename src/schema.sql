@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS confeitaria.receita_ingredientes (
 CREATE TABLE IF NOT EXISTS confeitaria.clientes (
   id          SERIAL PRIMARY KEY,
   nome        TEXT    NOT NULL,
+  documento   TEXT,
   telefone    TEXT,
   email       TEXT,
   observacoes TEXT,

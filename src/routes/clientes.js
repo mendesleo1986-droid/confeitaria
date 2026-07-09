@@ -18,11 +18,11 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { nome, telefone = null, email = null, observacoes = null } = req.body;
+  const { nome, documento = null, telefone = null, email = null, observacoes = null } = req.body;
   if (!nome?.trim()) return res.status(400).json({ erro: 'O nome é obrigatório.' });
   const row = await queryOne(
-    'INSERT INTO clientes (nome, telefone, email, observacoes) VALUES ($1,$2,$3,$4) RETURNING *',
-    [nome.trim(), telefone, email, observacoes]
+    'INSERT INTO clientes (nome, documento, telefone, email, observacoes) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+    [nome.trim(), documento, telefone, email, observacoes]
   );
   res.status(201).json(row);
 });
@@ -33,8 +33,8 @@ router.put('/:id', async (req, res) => {
   const m = { ...atual, ...req.body };
   if (!m.nome?.trim()) return res.status(400).json({ erro: 'O nome é obrigatório.' });
   const row = await queryOne(
-    'UPDATE clientes SET nome=$1, telefone=$2, email=$3, observacoes=$4 WHERE id=$5 RETURNING *',
-    [m.nome.trim(), m.telefone ?? null, m.email ?? null, m.observacoes ?? null, req.params.id]
+    'UPDATE clientes SET nome=$1, documento=$2, telefone=$3, email=$4, observacoes=$5 WHERE id=$6 RETURNING *',
+    [m.nome.trim(), m.documento ?? null, m.telefone ?? null, m.email ?? null, m.observacoes ?? null, req.params.id]
   );
   res.json(row);
 });
