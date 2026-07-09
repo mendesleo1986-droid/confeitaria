@@ -659,6 +659,7 @@ async function renderPedidos() {
           <td class="num" data-label="Ações">
             <button class="btn small ghost" data-ver="${p.id}">Abrir</button>
             <button class="btn small primary" data-editar="${p.id}">Editar</button>
+            <button class="btn small danger" data-excluir="${p.id}">Excluir</button>
           </td>
         </tr>`
       )
@@ -669,6 +670,20 @@ async function renderPedidos() {
     tbody.querySelectorAll('[data-editar]').forEach((b) =>
       b.addEventListener('click', () => editarPedido(b.dataset.editar))
     );
+    tbody.querySelectorAll('[data-excluir]').forEach((b) =>
+      b.addEventListener('click', () => excluirPedido(b.dataset.excluir))
+    );
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+async function excluirPedido(id) {
+  if (!confirm(`Excluir pedido #${id}? Esta ação não pode ser desfeita.`)) return;
+  try {
+    await API.pedidos.remover(id);
+    toast('Pedido excluído.');
+    renderPedidos();
   } catch (e) {
     toast(e.message, true);
   }
