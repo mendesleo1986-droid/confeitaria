@@ -5,10 +5,10 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
   max: 5,
-});
-
-pool.on('connect', (client) => {
-  client.query('SET search_path TO confeitaria,public');
+  // Define o search_path na inicialização da conexão. Necessário porque, no
+  // pooler do Supabase (modo transaction), um "SET search_path" avulso não
+  // persiste entre queries — como parâmetro de conexão, ele é propagado.
+  options: '-c search_path=confeitaria,public',
 });
 
 export const query    = (sql, p = []) => pool.query(sql, p).then((r) => r.rows);
