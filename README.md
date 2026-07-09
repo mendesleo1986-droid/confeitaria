@@ -41,26 +41,33 @@ preço_por_porção   = preço_de_venda / rendimento
 ## Tecnologias
 
 - **Backend**: Node.js + Express
-- **Banco de dados**: SQLite (via `better-sqlite3`) — arquivo local, sem servidor externo
+- **Banco de dados**: PostgreSQL (via `pg`) — Supabase em produção
 - **PDF**: `pdfkit` (geração no servidor)
 - **Frontend**: HTML, CSS e JavaScript puro (sem build)
+- **Deploy**: Vercel (serverless) + Supabase
 
 ## Como executar
 
-Requisitos: **Node.js 18+**.
+Requisitos: **Node.js 18+** e uma URL de conexão PostgreSQL (Supabase).
 
 ```bash
 # 1. Instalar dependências
 npm install
 
-# 2. (Opcional) Popular o banco com dados de exemplo
+# 2. Configurar a conexão com o banco
+cp .env.example .env   # e preencha DATABASE_URL
+
+# 3. Criar o schema (execute o conteúdo de src/schema.sql no seu banco)
+
+# 4. (Opcional) Popular o banco com dados de exemplo
 npm run seed
 
-# 3. Iniciar o servidor
+# 5. Iniciar o servidor
 npm start
 ```
 
-Acesse **http://localhost:3000**.
+Acesse **http://localhost:3000**. Os dados de exemplo também são semeados
+automaticamente na primeira execução, se o banco estiver vazio.
 
 Para desenvolvimento com recarga automática:
 
@@ -71,7 +78,14 @@ npm run dev
 ### Variáveis de ambiente
 
 - `PORT` — porta do servidor (padrão `3000`).
-- `DB_PATH` — caminho do arquivo SQLite (padrão `./confeitaria.db`).
+- `DATABASE_URL` — string de conexão PostgreSQL (obrigatória). Em produção,
+  use o **pooler em modo transaction** do Supabase (porta `6543`).
+
+### Deploy no Vercel
+
+1. Importe o repositório no Vercel.
+2. Defina a variável de ambiente `DATABASE_URL` (pooler transaction-mode do Supabase).
+3. O `vercel.json` já configura o build serverless. Deploy automático a cada push.
 
 ## API
 
