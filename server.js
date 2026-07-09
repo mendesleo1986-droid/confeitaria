@@ -65,7 +65,7 @@ app.get('/api/resumo', async (req, res) => {
 
 // Endpoint de diagnóstico temporário
 app.get('/api/debug', async (req, res) => {
-  const info = { temDatabaseUrl: !!process.env.DATABASE_URL };
+  const info = { versao: 'debug-3', temDatabaseUrl: !!process.env.DATABASE_URL };
   try {
     const r = await query('SELECT current_schema() AS schema, current_database() AS db');
     info.conexao = 'ok';
