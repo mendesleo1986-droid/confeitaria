@@ -1,0 +1,178 @@
+:root {
+  --rosa: #d6336c;
+  --rosa-claro: #fff0f6;
+  --rosa-borda: #f7c8da;
+  --marrom: #5c3a21;
+  --texto: #3a2e2a;
+  --cinza: #6b6360;
+  --fundo: #fdf6f0;
+  --card: #ffffff;
+  --verde: #2b8a3e;
+  --sombra: 0 2px 12px rgba(150, 80, 100, 0.12);
+  --raio: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Roboto, system-ui, sans-serif;
+  background: var(--fundo);
+  color: var(--texto);
+  line-height: 1.5;
+}
+
+/* Topbar */
+.topbar {
+  background: linear-gradient(120deg, var(--rosa), #b02a5b);
+  color: #fff;
+  padding: 0.8rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  box-shadow: var(--sombra);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar h1 { margin: 0; font-size: 1.4rem; }
+
+.tabs { display: flex; gap: 0.4rem; }
+.tab {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.15s;
+}
+.tab:hover { background: rgba(255, 255, 255, 0.3); }
+.tab.active { background: #fff; color: var(--rosa); font-weight: 600; }
+
+/* Main / views */
+main { max-width: 1080px; margin: 0 auto; padding: 1.5rem; }
+.view { display: none; animation: fade 0.2s ease; }
+.view.active { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+.view-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+h2 { color: var(--marrom); }
+h3 { color: var(--marrom); margin-top: 2rem; }
+.hint { color: var(--cinza); font-size: 0.9rem; margin-top: -0.4rem; }
+
+/* Cards de resumo */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1rem 0; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--rosa-borda);
+  border-radius: var(--raio);
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--sombra);
+}
+.card .valor { font-size: 1.6rem; font-weight: 700; color: var(--rosa); }
+.card .rotulo { color: var(--cinza); font-size: 0.85rem; }
+
+/* Cards de receita */
+.receita-card { cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
+.receita-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(150, 80, 100, 0.2); }
+.receita-card h4 { margin: 0 0 0.3rem; color: var(--marrom); }
+.tag { display: inline-block; background: var(--rosa-claro); color: var(--rosa); border: 1px solid var(--rosa-borda); padding: 0.1rem 0.6rem; border-radius: 999px; font-size: 0.75rem; }
+.receita-card .preco { font-size: 1.3rem; font-weight: 700; color: var(--verde); margin-top: 0.5rem; }
+.receita-card .sub { color: var(--cinza); font-size: 0.8rem; }
+
+/* Tabelas */
+.table-wrap { overflow-x: auto; background: var(--card); border-radius: var(--raio); box-shadow: var(--sombra); margin-top: 1rem; }
+table { width: 100%; border-collapse: collapse; min-width: 560px; }
+th, td { padding: 0.7rem 0.9rem; text-align: left; border-bottom: 1px solid #f1e4e9; }
+th { background: var(--rosa-claro); color: var(--marrom); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.03em; }
+tbody tr:hover { background: #fff8fb; }
+td.num, th.num { text-align: right; }
+
+/* Botões */
+.btn {
+  border: none; border-radius: 8px; padding: 0.55rem 1rem; cursor: pointer;
+  font-size: 0.92rem; background: #eee; color: var(--texto); transition: filter 0.12s;
+}
+.btn:hover { filter: brightness(0.95); }
+.btn.primary { background: var(--rosa); color: #fff; }
+.btn.ghost { background: transparent; border: 1px solid var(--rosa-borda); color: var(--rosa); }
+.btn.danger { background: transparent; color: #c92a2a; }
+.btn.small { padding: 0.3rem 0.6rem; font-size: 0.82rem; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(60, 30, 40, 0.45);
+  display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem; z-index: 50; overflow-y: auto;
+}
+/* O atributo [hidden] deve sempre esconder, mesmo com display: flex acima */
+[hidden] { display: none !important; }
+.modal {
+  background: #fff; border-radius: var(--raio); width: 100%; max-width: 640px;
+  padding: 1.6rem; position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.modal-close { position: absolute; top: 0.6rem; right: 0.9rem; background: none; border: none; font-size: 1.6rem; cursor: pointer; color: var(--cinza); line-height: 1; }
+.modal h3 { margin-top: 0; }
+
+/* Formulários */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+.field { display: flex; flex-direction: column; gap: 0.25rem; }
+.field.full { grid-column: 1 / -1; }
+label { font-size: 0.83rem; color: var(--cinza); font-weight: 600; }
+input, select, textarea {
+  padding: 0.5rem 0.6rem; border: 1px solid #e3d0d7; border-radius: 8px; font-size: 0.95rem; font-family: inherit; background: #fff;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--rosa-borda); border-color: var(--rosa); }
+textarea { resize: vertical; min-height: 70px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.2rem; }
+
+/* Linhas de ingredientes no formulário de receita */
+.ing-linha { display: grid; grid-template-columns: 2fr 1fr auto; gap: 0.5rem; align-items: end; margin-bottom: 0.5rem; }
+
+/* Box de precificação */
+.preco-box { background: var(--rosa-claro); border: 1px solid var(--rosa-borda); border-radius: var(--raio); padding: 1rem; margin-top: 1rem; }
+.preco-linha { display: flex; justify-content: space-between; padding: 0.25rem 0; font-size: 0.92rem; }
+.preco-linha.total { border-top: 1px dashed var(--rosa-borda); margin-top: 0.4rem; padding-top: 0.5rem; font-weight: 700; }
+.preco-linha.destaque { font-size: 1.15rem; color: var(--verde); font-weight: 700; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+  background: var(--marrom); color: #fff; padding: 0.7rem 1.2rem; border-radius: 999px;
+  box-shadow: var(--sombra); z-index: 100; font-size: 0.9rem;
+}
+.toast.erro { background: #c92a2a; }
+
+.vazio { text-align: center; color: var(--cinza); padding: 2rem; }
+
+/* Alerta de estoque baixo */
+.alerta {
+  background: #fff4e6; border: 1px solid #ffd8a8; border-radius: var(--raio);
+  padding: 0.9rem 1.1rem; margin: 1rem 0; color: #8a5a00;
+}
+.alerta ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+.alerta li { font-size: 0.9rem; }
+.estoque-baixo { color: #c92a2a; font-weight: 700; }
+
+/* Quantidade + seletor de unidade lado a lado */
+.qtd-unidade { display: flex; gap: 0.4rem; }
+.qtd-unidade input { flex: 1; min-width: 0; }
+.qtd-unidade select { flex: 0 0 auto; width: auto; }
+.un-base { color: var(--rosa); font-weight: 600; }
+
+/* Linha de item de pedido (4 colunas) */
+.item-linha { grid-template-columns: 2fr 1fr 1fr auto; }
+
+/* Badges de status de pedido */
+.status { display: inline-block; padding: 0.1rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+.status-pendente { background: #fff3bf; color: #8a6d00; }
+.status-em_producao { background: #d0ebff; color: #1864ab; }
+.status-concluido { background: #d3f9d8; color: #2b8a3e; }
+.status-cancelado { background: #ffe3e3; color: #c92a2a; }
+
+@media (max-width: 560px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .topbar { gap: 0.8rem; }
+}
