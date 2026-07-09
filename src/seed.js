@@ -68,8 +68,8 @@ export async function runSeed() {
     await ri(brigadeiro, ids['Chocolate granulado'],  100);
 
     const cliente = (await client.query(
-      'INSERT INTO clientes (nome, telefone, email) VALUES ($1,$2,$3) RETURNING id',
-      ['Maria Silva','(11) 98888-7777','maria@email.com']
+      'INSERT INTO clientes (nome, documento, telefone, email) VALUES ($1,$2,$3,$4) RETURNING id',
+      ['Maria Silva','390.533.447-05','(11) 98888-7777','maria@email.com']
     )).rows[0].id;
 
     const pedido = (await client.query(

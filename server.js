@@ -66,6 +66,8 @@ app.get('/api/resumo', async (req, res) => {
 // Semeia dados de exemplo na primeira execução (banco vazio)
 async function inicializar() {
   try {
+    // Migração idempotente: garante a coluna de CPF/CNPJ em bancos já existentes
+    await query('ALTER TABLE clientes ADD COLUMN IF NOT EXISTS documento TEXT');
     const [{ n }] = await query('SELECT COUNT(*) AS n FROM ingredientes');
     if (Number(n) === 0) await runSeed();
   } catch (e) {
