@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🍰 Confeitaria — Gestão de Receitas e Precificação</title>
+  <title>Afeto da Fer — Gestão de Receitas e Precificação</title>
   <link rel="stylesheet" href="css/styles.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍰</text></svg>" />
+  <link rel="icon" href="images/logo.png" />
 </head>
 <body>
   <header class="topbar">
-    <h1>🍰 Confeitaria</h1>
+    <div class="topbar-brand">
+      <img src="images/logo.png" alt="Afeto da Fer" class="topbar-logo" />
+      <span class="topbar-nome">Afeto da Fer</span>
+    </div>
     <nav class="tabs">
       <button class="tab active" data-view="painel">Painel</button>
       <button class="tab" data-view="ingredientes">Ingredientes</button>
@@ -22,6 +25,9 @@
   <main id="app">
     <!-- PAINEL -->
     <section id="view-painel" class="view active">
+      <div class="painel-header">
+        <img src="images/logo.png" alt="Afeto da Fer" class="painel-logo" />
+      </div>
       <h2>Visão Geral</h2>
       <div class="cards" id="resumo-cards"></div>
       <div id="alerta-estoque"></div>
