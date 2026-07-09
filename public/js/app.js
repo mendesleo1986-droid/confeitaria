@@ -114,12 +114,12 @@ async function renderPainel() {
     tbody.innerHTML = receitas
       .map(
         (r) => `<tr>
-          <td>${esc(r.nome)}</td>
-          <td>${esc(r.categoria || '—')}</td>
-          <td>${fmtNum(r.rendimento)} ${esc(r.unidade_rendimento)}</td>
-          <td class="num">${fmt(r.custo_total)}</td>
-          <td class="num">${fmt(r.preco_venda_sugerido)}</td>
-          <td class="num">${fmt(r.preco_por_porcao)}</td>
+          <td data-label="Receita">${esc(r.nome)}</td>
+          <td data-label="Categoria">${esc(r.categoria || '—')}</td>
+          <td data-label="Rendimento">${fmtNum(r.rendimento)} ${esc(r.unidade_rendimento)}</td>
+          <td class="num" data-label="Custo">${fmt(r.custo_total)}</td>
+          <td class="num" data-label="Preço sugerido">${fmt(r.preco_venda_sugerido)}</td>
+          <td class="num" data-label="Preço/porção">${fmt(r.preco_por_porcao)}</td>
         </tr>`
       )
       .join('');
@@ -141,13 +141,13 @@ async function renderIngredientes() {
       .map((i) => {
         const baixo = i.estoque_minimo > 0 && i.estoque <= i.estoque_minimo;
         return `<tr>
-          <td>${esc(i.nome)}</td>
-          <td class="num">${fmt(i.preco_compra)}</td>
-          <td class="num">${Unidades.formatar(i.quantidade_compra, i.unidade)}</td>
-          <td class="num">${custoUnitarioLegivel(i)}</td>
-          <td class="num ${baixo ? 'estoque-baixo' : ''}">${Unidades.formatar(i.estoque, i.unidade)}${baixo ? ' ⚠️' : ''}</td>
-          <td>${esc(i.fornecedor || '—')}</td>
-          <td class="num">
+          <td data-label="Nome">${esc(i.nome)}</td>
+          <td class="num" data-label="Preço compra">${fmt(i.preco_compra)}</td>
+          <td class="num" data-label="Qtd. compra">${Unidades.formatar(i.quantidade_compra, i.unidade)}</td>
+          <td class="num" data-label="Custo unitário">${custoUnitarioLegivel(i)}</td>
+          <td class="num ${baixo ? 'estoque-baixo' : ''}" data-label="Estoque">${Unidades.formatar(i.estoque, i.unidade)}${baixo ? ' ⚠️' : ''}</td>
+          <td data-label="Fornecedor">${esc(i.fornecedor || '—')}</td>
+          <td class="num" data-label="Ações">
             <button class="btn small ghost" data-edit="${i.id}">Editar</button>
             <button class="btn small danger" data-del="${i.id}">Excluir</button>
           </td>
@@ -559,12 +559,12 @@ async function renderClientes() {
     tbody.innerHTML = clientesCache
       .map(
         (c) => `<tr>
-          <td>${esc(c.nome)}</td>
-          <td>${esc(c.documento || '—')}</td>
-          <td>${esc(c.telefone || '—')}</td>
-          <td>${esc(c.email || '—')}</td>
-          <td class="num">${c.total_pedidos}</td>
-          <td class="num">
+          <td data-label="Nome">${esc(c.nome)}</td>
+          <td data-label="CPF/CNPJ">${esc(c.documento || '—')}</td>
+          <td data-label="Telefone">${esc(c.telefone || '—')}</td>
+          <td data-label="E-mail">${esc(c.email || '—')}</td>
+          <td class="num" data-label="Pedidos">${c.total_pedidos}</td>
+          <td class="num" data-label="Ações">
             <button class="btn small ghost" data-edit="${c.id}">Editar</button>
             <button class="btn small danger" data-del="${c.id}">Excluir</button>
           </td>
@@ -650,13 +650,13 @@ async function renderPedidos() {
     tbody.innerHTML = pedidos
       .map(
         (p) => `<tr>
-          <td>#${p.id}</td>
-          <td>${esc(p.cliente)}</td>
-          <td>${esc(formatarData(p.data_entrega))}</td>
-          <td class="num">${p.qtd_itens}</td>
-          <td class="num">${fmt(p.total)}</td>
-          <td><span class="status status-${esc(p.status)}">${esc(STATUS_ROTULO[p.status] || p.status)}</span>${p.estoque_baixado ? ' <span class="tag">estoque baixado</span>' : ''}</td>
-          <td class="num">
+          <td data-label="#">#${p.id}</td>
+          <td data-label="Cliente">${esc(p.cliente)}</td>
+          <td data-label="Entrega">${esc(formatarData(p.data_entrega))}</td>
+          <td class="num" data-label="Itens">${p.qtd_itens}</td>
+          <td class="num" data-label="Total">${fmt(p.total)}</td>
+          <td data-label="Status"><span class="status status-${esc(p.status)}">${esc(STATUS_ROTULO[p.status] || p.status)}</span>${p.estoque_baixado ? ' <span class="tag">estoque baixado</span>' : ''}</td>
+          <td class="num" data-label="Ações">
             <button class="btn small ghost" data-ver="${p.id}">Abrir</button>
             <button class="btn small primary" data-editar="${p.id}">Editar</button>
           </td>
