@@ -38,6 +38,15 @@ body {
 }
 .topbar h1 { margin: 0; font-size: 1.4rem; }
 
+/* Marca na topbar */
+.topbar-brand { display: flex; align-items: center; gap: 0.6rem; }
+.topbar-logo { height: 44px; width: 44px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.5); flex-shrink: 0; }
+.topbar-nome { font-size: 1.2rem; font-weight: 700; color: #fff; white-space: nowrap; }
+
+/* Logo no painel */
+.painel-header { display: flex; justify-content: center; padding: 1rem 0 0.5rem; }
+.painel-logo { height: 140px; width: 140px; border-radius: 50%; object-fit: cover; box-shadow: var(--sombra); border: 3px solid var(--rosa-borda); }
+
 .tabs { display: flex; gap: 0.4rem; }
 .tab {
   background: rgba(255, 255, 255, 0.15);
@@ -184,6 +193,10 @@ textarea { resize: vertical; min-height: 70px; }
   /* Topbar: título em cima, abas em linha rolável */
   .topbar { gap: 0.6rem; padding: 0.7rem 0.9rem; }
   .topbar h1 { font-size: 1.2rem; width: 100%; }
+  .topbar-brand { width: 100%; }
+  .topbar-logo { height: 38px; width: 38px; }
+  .topbar-nome { font-size: 1.1rem; }
+  .painel-logo { height: 110px; width: 110px; }
   .tabs {
     width: 100%; overflow-x: auto; flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch; padding-bottom: 2px;
