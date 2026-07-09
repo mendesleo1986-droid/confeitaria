@@ -192,8 +192,10 @@ textarea { resize: vertical; min-height: 70px; }
   .tabs::-webkit-scrollbar { display: none; }
   .tab { flex: 0 0 auto; white-space: nowrap; }
 
-  .view-head { gap: 0.6rem; }
+  .view-head { gap: 0.6rem; margin-bottom: 0.6rem; }
   .view-head .btn { width: 100%; }
+  /* Sem o recuo negativo padrão, para não colar o texto no botão de largura total */
+  .hint { margin-top: 0.4rem; margin-bottom: 0.8rem; }
 
   /* Formulário em coluna única */
   .form-grid { grid-template-columns: 1fr; }
