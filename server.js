@@ -59,8 +59,31 @@ app.get('/api/resumo', async (req, res) => {
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ erro: 'Erro interno do servidor.' });
+    res.status(500).json({ erro: 'Erro interno do servidor.', detalhe: e.message });
   }
+});
+
+// Endpoint de diagnóstico temporário
+app.get('/api/debug', async (req, res) => {
+  const info = { temDatabaseUrl: !!process.env.DATABASE_URL };
+  try {
+    const r = await query('SELECT current_schema() AS schema, current_database() AS db');
+    info.conexao = 'ok';
+    info.schema = r[0]?.schema;
+    info.db = r[0]?.db;
+  } catch (e) {
+    info.conexao = 'falhou';
+    info.erro = e.message;
+  }
+  try {
+    const t = await query(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'confeitaria' ORDER BY table_name"
+    );
+    info.tabelas_confeitaria = t.map((x) => x.table_name);
+  } catch (e) {
+    info.erro_tabelas = e.message;
+  }
+  res.json(info);
 });
 
 // Semeia dados de exemplo na primeira execução (banco vazio)
