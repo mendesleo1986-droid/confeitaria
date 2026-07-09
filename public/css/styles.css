@@ -44,8 +44,8 @@ body {
 .topbar-nome { font-size: 1.2rem; font-weight: 700; color: #fff; white-space: nowrap; }
 
 /* Logo no painel */
-.painel-header { display: flex; justify-content: center; padding: 1rem 0 0.5rem; }
-.painel-logo { height: 140px; width: 140px; border-radius: 50%; object-fit: cover; box-shadow: var(--sombra); border: 3px solid var(--rosa-borda); }
+.painel-header { text-align: center; padding: 0.5rem 0 0.25rem; }
+.painel-logo { display: block; margin: 0 auto; max-height: 180px; width: auto; max-width: 100%; object-fit: contain; }
 
 .tabs { display: flex; gap: 0.4rem; }
 .tab {
@@ -196,7 +196,7 @@ textarea { resize: vertical; min-height: 70px; }
   .topbar-brand { width: 100%; }
   .topbar-logo { height: 38px; width: 38px; }
   .topbar-nome { font-size: 1.1rem; }
-  .painel-logo { height: 110px; width: 110px; }
+  .painel-logo { max-height: 140px; }
   .tabs {
     width: 100%; overflow-x: auto; flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch; padding-bottom: 2px;
