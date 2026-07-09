@@ -1,6 +1,10 @@
 import pg from 'pg';
 const { Pool } = pg;
 
+// Retorna colunas DATE (OID 1082) como string 'YYYY-MM-DD', em vez de um objeto
+// Date — evita conversão de fuso horário e o timestamp completo no JSON da API.
+pg.types.setTypeParser(1082, (v) => v);
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },

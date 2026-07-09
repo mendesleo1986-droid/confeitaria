@@ -656,12 +656,18 @@ async function renderPedidos() {
           <td class="num">${p.qtd_itens}</td>
           <td class="num">${fmt(p.total)}</td>
           <td><span class="status status-${esc(p.status)}">${esc(STATUS_ROTULO[p.status] || p.status)}</span>${p.estoque_baixado ? ' <span class="tag">estoque baixado</span>' : ''}</td>
-          <td class="num"><button class="btn small ghost" data-ver="${p.id}">Abrir</button></td>
+          <td class="num">
+            <button class="btn small ghost" data-ver="${p.id}">Abrir</button>
+            <button class="btn small primary" data-editar="${p.id}">Editar</button>
+          </td>
         </tr>`
       )
       .join('');
     tbody.querySelectorAll('[data-ver]').forEach((b) =>
       b.addEventListener('click', () => detalhePedido(b.dataset.ver))
+    );
+    tbody.querySelectorAll('[data-editar]').forEach((b) =>
+      b.addEventListener('click', () => editarPedido(b.dataset.editar))
     );
   } catch (e) {
     toast(e.message, true);
@@ -726,6 +732,16 @@ async function detalhePedido(id) {
   }
 }
 
+// Busca o pedido completo (com itens) e abre o formulário de edição
+async function editarPedido(id) {
+  try {
+    const p = await API.pedidos.obter(id);
+    formPedido(p);
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
 async function formPedido(pedido = null) {
   const editando = !!pedido;
   const [clientes, receitas] = await Promise.all([API.clientes.listar(), API.receitas.listar()]);
@@ -750,7 +766,7 @@ async function formPedido(pedido = null) {
     <h3>${editando ? `Editar pedido #${pedido.id}` : 'Novo pedido'}</h3>
     <div class="form-grid">
       <div class="field"><label>Cliente</label><select name="cliente_id">${optClientes(pedido?.cliente_id)}</select></div>
-      <div class="field"><label>Data de entrega</label><input name="data_entrega" type="date" value="${esc(pedido?.data_entrega || '')}" /></div>
+      <div class="field"><label>Data de entrega</label><input name="data_entrega" type="date" value="${dataParaInput(pedido?.data_entrega)}" /></div>
       <div class="field"><label>Status</label><select name="status">${statusOpts(pedido?.status || 'pendente')}</select></div>
       <div class="field full"><label>Observações</label><input name="observacoes" value="${esc(pedido?.observacoes || '')}" /></div>
     </div>
@@ -848,8 +864,14 @@ $('#btn-novo-pedido').addEventListener('click', () => formPedido());
 
 function formatarData(iso) {
   if (!iso) return 'Sem data';
-  const [a, m, d] = iso.split('-');
+  // Aceita tanto 'YYYY-MM-DD' quanto ISO completo ('YYYY-MM-DDThh:mm:ss.sssZ')
+  const [a, m, d] = String(iso).slice(0, 10).split('-');
   return d ? `${d}/${m}/${a}` : iso;
+}
+
+// Normaliza a data para o formato aceito pelo <input type="date"> (YYYY-MM-DD)
+function dataParaInput(iso) {
+  return iso ? String(iso).slice(0, 10) : '';
 }
 
 // ====== Início ======
